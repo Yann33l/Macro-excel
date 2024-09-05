@@ -1,8 +1,14 @@
 '
 ' Made by YLE
 '
+Option Explicit
 
 Sub NetoyageDesDonnées(nomFeuille As String)
+
+    Dim s As Integer
+    Application.ScreenUpdating = False
+    On Error GoTo CleanExit
+    
     For s = 1 To ThisWorkbook.Sheets.Count - 2
         Worksheets(nomFeuille & s).Activate
         If nomFeuille = "ADN Maxwell custom " Then
@@ -26,11 +32,14 @@ Sub NetoyageDesDonnées(nomFeuille As String)
         Else
         End If
         Worksheets("ExportAriane").Activate
-    Next
+    Next s
 
+CleanExit:
+    Application.ScreenUpdating = True
+    If Err.Number <> 0 Then MsgBox "Erreur: " & Err.Description
 End Sub
 
-Function ValeurSaisiEstElleUneDate(question As String, titre As String, Default As String)
+Function ValeurSaisiEstElleUneDate(question As String, titre As String, Default As String) As Date
 Dim reponseStr As String
 Dim reponseDate As Date
     Do
@@ -49,6 +58,7 @@ End Function
 Sub CreationSeriesTechniques()
 
     Dim exportAriane As Worksheet
+    Dim ws As Worksheet
     Dim numeroFormulaire As String
     Dim typeDeSerieExtraction As String
     Dim nomFeuille As String
@@ -66,7 +76,9 @@ Sub CreationSeriesTechniques()
     Dim nbrLigneDeLaSerie As Integer
     Dim positionAléatoireBlanc As Integer
     Dim s As Integer
-         
+    Dim ligne As Integer
+    Dim LignePat As Range
+             
     ThisWorkbook.Sheets("ExportAriane").Activate
     Set exportAriane = ActiveSheet
     
@@ -103,58 +115,45 @@ Sub CreationSeriesTechniques()
     End If
 
     For s = 1 To nbrSerieACreer
+        Set ws = Worksheets(nomFeuille & s)
         numBlanc = numPremierBlanc + s - 1
         numSerie = Right(numPremiereSerie, 4) + s - 1
         nomSerie = "ST-" & Right(Year(dateJ1), 2) & "-" & typeDeSerieExtraction & "-" & Format(numSerie, "0000")
-        nbrLigneDeLaSerie = Application.WorksheetFunction.CountA(Range(Cells(2 - 15 + s * 15, "B"), Cells(16 - 15 + s * 15, "B")))
+        nbrLigneDeLaSerie = Application.WorksheetFunction.CountA(exportAriane.Range(exportAriane.Cells(2 - 15 + s * 15, "B"), exportAriane.Cells(16 - 15 + s * 15, "B")))
         positionAléatoireBlanc = (nbrLigneDeLaSerie * Rnd) + 1
 
         
-        Worksheets(nomFeuille & s).Activate
-        Range("D7").Value = nomSerie
-        Range("D10").Value = dateJ1
-        Range("D11").Value = opérateursJ1
-        Range("D14").Value = dateJ2
-        Range("D15").Value = opérateursJ2
-        Range("D16").Value = volumeElution & " µL"
-        Worksheets("ExportAriane").Activate
+        With ws
+            .Range("D7").Value = nomSerie
+            .Range("D10").Value = dateJ1
+            .Range("D11").Value = opérateursJ1
+            .Range("D14").Value = dateJ2
+            .Range("D15").Value = opérateursJ2
+            .Range("D16").Value = volumeElution & " µL"
+        End With
         
         For ligne = 1 To nbrLigneDeLaSerie + 1
-           
             If ligne < positionAléatoireBlanc Then
-                LignePat = Range(Cells(1 + ligne + (s - 1) * 15, "B"), Cells(1 + ligne + (s - 1) * 15, "F"))
-                Worksheets(nomFeuille & s).Activate
-                Range(Cells(19 + ligne, "C"), Cells(19 + ligne, "G")).Value = LignePat
+                Set LignePat = exportAriane.Range(exportAriane.Cells(1 + ligne + (s - 1) * 15, "B"), exportAriane.Cells(1 + ligne + (s - 1) * 15, "F"))
+                ws.Range(ws.Cells(19 + ligne, "C"), ws.Cells(19 + ligne, "G")).Value = LignePat.Value
             ElseIf ligne = positionAléatoireBlanc Then
-                Worksheets(nomFeuille & s).Activate
-                Cells(19 + ligne, "C").Value = "BLANC M" & Format(numBlanc, "000")
-                If nomFeuille = "ADN Maxwell custom " Then
-                    Range(Cells(19 + ligne, "B"), Cells(19 + ligne, "K")).Select
-                    With Selection.Interior
-                        .Pattern = xlSolid
-                        .PatternColorIndex = xlAutomatic
-                        .Color = 49407
-                        .TintAndShade = 0
-                        .PatternTintAndShade = 0
-                    End With
-                ElseIf nomFeuille = "ARN Maxwell " Then
-                    Range(Cells(19 + ligne, "B"), Cells(19 + ligne, "L")).Select
-                    With Selection.Interior
-                        .Pattern = xlSolid
-                        .PatternColorIndex = xlAutomatic
-                        .Color = 49407
-                        .TintAndShade = 0
-                        .PatternTintAndShade = 0
-                    End With
-                End If
+                ws.Cells(19 + ligne, "C").Value = "BLANC M" & Format(numBlanc, "000")
+                    If nomFeuille = "ADN Maxwell custom " Then
+                        ws.Range(ws.Cells(19 + ligne, "B"), ws.Cells(19 + ligne, "K")).Interior.Color = 49407
+                    ElseIf nomFeuille = "ARN Maxwell " Then
+                        ws.Range(ws.Cells(19 + ligne, "B"), ws.Cells(19 + ligne, "L")).Interior.Color = 49407
+                    End If
             Else
-                LignePat = Range(Cells(1 + ligne - 1 + (s - 1) * 15, "B"), Cells(1 + ligne - 1 + (s - 1) * 15, "F"))
-                Worksheets(nomFeuille & s).Activate
-                Range(Cells(19 + ligne, "C"), Cells(19 + ligne, "G")).Value = LignePat
+                Set LignePat = exportAriane.Range(exportAriane.Cells(1 + ligne - 1 + (s - 1) * 15, "B"), exportAriane.Cells(1 + ligne - 1 + (s - 1) * 15, "F"))
+                ws.Range(ws.Cells(19 + ligne, "C"), ws.Cells(19 + ligne, "G")).Value = LignePat.Value
             End If
-            Worksheets("ExportAriane").Activate
-        Next
-    Next
+        Next ligne
+    Next s
+    
     Worksheets(nomFeuille & "1").Activate
                       
 End Sub
+
+
+
+
